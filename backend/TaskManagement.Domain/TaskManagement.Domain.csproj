@@ -7,14 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Rol\" />
-    <Folder Include="RefreshToken\" />
-    <Folder Include="Proyecto\" />
-    <Folder Include="Tarea\" />
-    <Folder Include="Usuario\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="FluentValidation" Version="12.1.1" />
   </ItemGroup>
 
