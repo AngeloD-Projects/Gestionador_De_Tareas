@@ -6,4 +6,12 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <Folder Include="Rol\" />
+    <Folder Include="RefreshToken\" />
+    <Folder Include="Proyecto\" />
+    <Folder Include="Tarea\" />
+    <Folder Include="Usuario\" />
+  </ItemGroup>
+
 </Project>
