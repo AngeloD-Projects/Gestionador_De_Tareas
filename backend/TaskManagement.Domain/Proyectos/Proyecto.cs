@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using TaskManagement.Domain.Usuario;
+using TaskManagement.Domain.Usuarios;
 
-namespace TaskManagement.Domain.Proyecto
+namespace TaskManagement.Domain.Proyectos
 {
     public class Proyecto
     {

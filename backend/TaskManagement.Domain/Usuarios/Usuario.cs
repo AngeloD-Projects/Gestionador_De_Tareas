@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace TaskManagement.Domain.Usuario
+namespace TaskManagement.Domain.Usuarios
 {
     public class Usuario
     {
