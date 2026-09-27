@@ -1,8 +1,13 @@
+using Microsoft.Data.SqlClient;
+using System.Data;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
+builder.Services.AddScoped<IDbConnection>(sp =>
+    new SqlConnection(builder.Configuration.GetConnectionString("CadenaSQL")));
 
 var app = builder.Build();
 
