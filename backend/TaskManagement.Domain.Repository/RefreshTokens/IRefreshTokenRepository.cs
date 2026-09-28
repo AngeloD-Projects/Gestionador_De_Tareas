@@ -11,6 +11,6 @@ namespace TaskManagement.Domain.Repository.RefreshTokens
     {
         Task CrearAsync(RefreshToken refreshToken);
         Task<RefreshToken?> ObtenerValidoAsync(string token);
-        Task RevocarAsync(string token);
+        Task<bool> RevocarAsync(string token);
     }
 }

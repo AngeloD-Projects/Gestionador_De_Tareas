@@ -13,8 +13,8 @@ namespace TaskManagement.Domain.Repository.Tareas
         Task<IList<Tarea>> ObtenerTodasAsync(int? proyectoId, EstadoFlujoTarea? estadoFlujo);
         Task<IList<Tarea>> ObtenerPorUsuarioAsignadoAsync(int usuarioId);
         Task<Tarea?> ObtenerPorIdAsync(int id);
-        Task ActualizarCompletaAsync(Tarea tarea);
-        Task ActualizarEstadoFlujoAsync(int id, EstadoFlujoTarea estadoFlujo);
-        Task EliminarAsync(int id);
+        Task<bool> ActualizarCompletaAsync(Tarea tarea);
+        Task<bool> ActualizarEstadoFlujoAsync(int id, EstadoFlujoTarea estadoFlujo);
+        Task<bool> EliminarAsync(int id);
     }
 }
