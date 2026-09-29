@@ -25,12 +25,12 @@ namespace TaskManagement.Repository.ImplSql.Usuarios
             var parametros = new DynamicParameters();
             parametros.Add("@Email", email);
 
-            var resultado = await _connection.QueryFirstOrDefaultAsync<Usuario>(
+            var fila = await _connection.QueryFirstOrDefaultAsync<UsuarioFila>(
                 "sp_Usuario_ObtenerPorEmail",
                 parametros,
                 commandType: CommandType.StoredProcedure);
 
-            return resultado;
+            return MapearUsuario(fila);
         }
 
         public async Task<Usuario?> ObtenerPorIdAsync(int id)
@@ -38,10 +38,12 @@ namespace TaskManagement.Repository.ImplSql.Usuarios
             var parametros = new DynamicParameters();
             parametros.Add("@Id", id);
 
-            return await _connection.QueryFirstOrDefaultAsync<Usuario>(
+            var fila = await _connection.QueryFirstOrDefaultAsync<UsuarioFila>(
                 "sp_Usuario_ObtenerPorId",
                 parametros,
                 commandType: CommandType.StoredProcedure);
+
+            return MapearUsuario(fila);
         }
 
         public async Task<int> RegistrarAsync(Usuario usuario)
@@ -82,6 +84,37 @@ namespace TaskManagement.Repository.ImplSql.Usuarios
                 "sp_Usuario_ResetIntentos",
                 parametros,
                 commandType: CommandType.StoredProcedure);
+        }
+
+        private static Usuario? MapearUsuario(UsuarioFila? fila)
+        {
+            if (fila is null) return null;
+
+            return new Usuario
+            {
+                Id = fila.Id,
+                NombreUsuario = fila.NombreUsuario,
+                Email = fila.Email,
+                PasswordHash = fila.PasswordHash,
+                RolId = fila.RolId,
+                Estado = EstadoRegistroCodigo.Parse(fila.Estado),
+                IntentosFallidos = fila.IntentosFallidos,
+                BloqueadoHasta = fila.BloqueadoHasta,
+                FechaCreacion = fila.FechaCreacion
+            };
+        }
+
+        private class UsuarioFila
+        {
+            public int Id { get; set; }
+            public string NombreUsuario { get; set; } = string.Empty;
+            public string Email { get; set; } = string.Empty;
+            public string PasswordHash { get; set; } = string.Empty;
+            public int RolId { get; set; }
+            public string Estado { get; set; } = string.Empty;
+            public int IntentosFallidos { get; set; }
+            public DateTime? BloqueadoHasta { get; set; }
+            public DateTime FechaCreacion { get; set; }
         }
     }
 }

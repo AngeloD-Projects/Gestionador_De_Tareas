@@ -25,6 +25,23 @@ namespace TaskManagement.Domain.Usuarios
         Inactivo
     }
 
+    public static class EstadoRegistroCodigo
+    {
+        public static EstadoRegistro Parse(string codigo) => codigo switch
+        {
+            "ACT" => EstadoRegistro.Activo,
+            "INA" => EstadoRegistro.Inactivo,
+            _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, "Código de estado no reconocido.")
+        };
+
+        public static string ToCodigo(EstadoRegistro estado) => estado switch
+        {
+            EstadoRegistro.Activo => "ACT",
+            EstadoRegistro.Inactivo => "INA",
+            _ => throw new ArgumentOutOfRangeException(nameof(estado))
+        };
+    }
+
     namespace Validators
     {
         public class Usuario__RegistroValidador : AbstractValidator<Usuario>

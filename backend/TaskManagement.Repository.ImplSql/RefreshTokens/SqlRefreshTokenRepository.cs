@@ -48,7 +48,7 @@ namespace TaskManagement.Repository.ImplSql.RefreshTokens
             var parametros = new DynamicParameters();
             parametros.Add("@Token", token);
 
-            int filasAfectadas = await _connection.ExecuteAsync(
+            int filasAfectadas = await _connection.QuerySingleAsync<int>(
                 "sp_RefreshToken_Revocar",
                 parametros,
                 commandType: CommandType.StoredProcedure);
