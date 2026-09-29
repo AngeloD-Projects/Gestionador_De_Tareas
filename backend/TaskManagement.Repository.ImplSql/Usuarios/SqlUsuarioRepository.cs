@@ -33,6 +33,17 @@ namespace TaskManagement.Repository.ImplSql.Usuarios
             return resultado;
         }
 
+        public async Task<Usuario?> ObtenerPorIdAsync(int id)
+        {
+            var parametros = new DynamicParameters();
+            parametros.Add("@Id", id);
+
+            return await _connection.QueryFirstOrDefaultAsync<Usuario>(
+                "sp_Usuario_ObtenerPorId",
+                parametros,
+                commandType: CommandType.StoredProcedure);
+        }
+
         public async Task<int> RegistrarAsync(Usuario usuario)
         {
             var parametros = new DynamicParameters();
