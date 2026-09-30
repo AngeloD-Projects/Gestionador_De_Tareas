@@ -15,6 +15,7 @@ using TaskManagement.Domain.Repository.Usuarios;
 using TaskManagement.Repository.ImplSql.RefreshTokens;
 using TaskManagement.Repository.ImplSql.TypeHandlers;
 using TaskManagement.Repository.ImplSql.Usuarios;
+using TaskManagement.WebApiCore.Middlewares;
 using TaskManagement.WebApiCore.Securitys;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -73,6 +74,8 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+
+app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 app.UseHttpsRedirection();
 
