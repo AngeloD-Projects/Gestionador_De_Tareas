@@ -4,15 +4,24 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
 using System.Data;
 using System.Text;
 using TaskManagement.Domain.ApplicationServices.Auths;
 using TaskManagement.Domain.ApplicationServices.Auths.Interfaces;
 using TaskManagement.Domain.ApplicationServices.Auths.Services;
 using TaskManagement.Domain.ApplicationServices.Auths.Validators;
+using TaskManagement.Domain.ApplicationServices.Proyectos.Interfaces;
+using TaskManagement.Domain.ApplicationServices.Proyectos.Services;
+using TaskManagement.Domain.ApplicationServices.Tareas.Interfaces;
+using TaskManagement.Domain.ApplicationServices.Tareas.Services;
+using TaskManagement.Domain.Repository.Proyectos;
 using TaskManagement.Domain.Repository.RefreshTokens;
+using TaskManagement.Domain.Repository.Tareas;
 using TaskManagement.Domain.Repository.Usuarios;
+using TaskManagement.Repository.ImplSql.Proyectos;
 using TaskManagement.Repository.ImplSql.RefreshTokens;
+using TaskManagement.Repository.ImplSql.Tareas;
 using TaskManagement.Repository.ImplSql.TypeHandlers;
 using TaskManagement.Repository.ImplSql.Usuarios;
 using TaskManagement.WebApiCore.Middlewares;
@@ -31,6 +40,10 @@ SqlMapper.AddTypeHandler(new EstadoRegistroTypeHandler());
 
 // Repositorios y Services
 builder.Services.AddScoped<IUsuarioRepository, SqlUsuarioRepository>();
+builder.Services.AddScoped<IProyectoRepository, SqlProyectoRepository>();
+builder.Services.AddScoped<ITareaRepository, SqlTareaRepository>();
+builder.Services.AddScoped<IProyectoService, ProyectoService>();
+builder.Services.AddScoped<ITareaService, TareaService>();
 builder.Services.AddScoped<IRefreshTokenRepository, SqlRefreshTokenRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
@@ -65,7 +78,33 @@ builder.Services.AddValidatorsFromAssemblyContaining<RegistroUsuarioRequest__Val
 // Servicios base de la Web API (Controllers + Swagger)
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(options =>
+{
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ingresa el token con el formato: Bearer {tu token}"
+    });
+
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
+});
 
 var app = builder.Build();
 

@@ -7,10 +7,11 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskManagement.Domain.Repository.Tareas;
 using TaskManagement.Domain.Tareas;
+using TaskManagement.Domain.Usuarios;
 
 namespace TaskManagement.Repository.ImplSql.Tareas
 {
-    internal class SqlTareaRepository : ITareaRepository
+    public class SqlTareaRepository : ITareaRepository
     {
         private readonly IDbConnection _connection;
 
@@ -30,7 +31,7 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             parametros.Add("@FechaVencimiento", tarea.FechaVencimiento);
             parametros.Add("@AsignadoAId", tarea.AsignadoAId);
 
-            int filasAfectadas = await _connection.ExecuteAsync(
+            int filasAfectadas = await _connection.QuerySingleAsync<int>(
                 "sp_Tarea_ActualizarCompleta",
                 parametros,
                 commandType: CommandType.StoredProcedure);
@@ -44,7 +45,7 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             parametros.Add("@Id", id);
             parametros.Add("@EstadoFlujo", (int)estadoFlujo);
 
-            int filasAfectadas = await _connection.ExecuteAsync(
+            int filasAfectadas = await _connection.QuerySingleAsync<int>(
                 "sp_Tarea_ActualizarEstadoFlujo",
                 parametros,
                 commandType: CommandType.StoredProcedure);
@@ -74,7 +75,7 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             var parametros = new DynamicParameters();
             parametros.Add("@Id", id);
 
-            int filasAfectadas = await _connection.ExecuteAsync(
+            int filasAfectadas = await _connection.QuerySingleAsync<int>(
                 "sp_Tarea_Eliminar",
                 parametros,
                 commandType: CommandType.StoredProcedure);
@@ -87,10 +88,12 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             var parametros = new DynamicParameters();
             parametros.Add("@Id", id);
 
-            return await _connection.QueryFirstOrDefaultAsync<Tarea>(
+            var fila = await _connection.QueryFirstOrDefaultAsync(
                 "sp_Tarea_ObtenerPorId",
                 parametros,
                 commandType: CommandType.StoredProcedure);
+
+            return fila == null ? null : MapearTarea(fila);
         }
 
         public async Task<IList<Tarea>> ObtenerPorUsuarioAsignadoAsync(int usuarioId)
@@ -98,12 +101,12 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             var parametros = new DynamicParameters();
             parametros.Add("@UsuarioId", usuarioId);
 
-            var resultado = await _connection.QueryAsync<Tarea>(
+            var filas = await _connection.QueryAsync(
                 "sp_Tarea_ObtenerPorUsuarioAsignado",
                 parametros,
                 commandType: CommandType.StoredProcedure);
 
-            return resultado.ToList();
+            return filas.Select(fila => (Tarea)MapearTarea(fila)).ToList();
         }
 
         public async Task<IList<Tarea>> ObtenerTodasAsync(int? proyectoId, EstadoFlujoTarea? estadoFlujo)
@@ -112,12 +115,31 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             parametros.Add("@ProyectoId", proyectoId);
             parametros.Add("@EstadoFlujo", estadoFlujo.HasValue ? (int)estadoFlujo.Value : (int?)null);
 
-            var resultado = await _connection.QueryAsync<Tarea>(
+            var filas = await _connection.QueryAsync(
                 "sp_Tarea_ObtenerTodas",
                 parametros,
                 commandType: CommandType.StoredProcedure);
 
-            return resultado.ToList();
+            return filas.Select(fila => (Tarea)MapearTarea(fila)).ToList();
+        }
+
+        private static Tarea MapearTarea(dynamic fila)
+        {
+            return new Tarea
+            {
+                Id = fila.Id,
+                Titulo = fila.Titulo,
+                Descripcion = fila.Descripcion,
+                EstadoFlujo = (EstadoFlujoTarea)fila.EstadoFlujo,
+                Prioridad = (Prioridad)fila.Prioridad,
+                Estado = fila.Estado == "ACT" ? EstadoRegistro.Activo : EstadoRegistro.Inactivo,
+                FechaVencimiento = fila.FechaVencimiento,
+                ProyectoId = fila.ProyectoId,
+                AsignadoAId = fila.AsignadoAId,
+                CreadoPorId = fila.CreadoPorId,
+                FechaCreacion = fila.FechaCreacion,
+                FechaActualizacion = fila.FechaActualizacion
+            };
         }
     }
 }

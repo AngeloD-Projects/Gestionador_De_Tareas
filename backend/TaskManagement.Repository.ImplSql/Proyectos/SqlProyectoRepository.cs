@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskManagement.Domain.Proyectos;
 using TaskManagement.Domain.Repository.Proyectos;
+using TaskManagement.Domain.Usuarios;
 
 namespace TaskManagement.Repository.ImplSql.Proyectos
 {
@@ -37,19 +38,34 @@ namespace TaskManagement.Repository.ImplSql.Proyectos
             var parametros = new DynamicParameters();
             parametros.Add("@Id", id);
 
-            return await _connection.QueryFirstOrDefaultAsync<Proyecto>(
+            var fila = await _connection.QueryFirstOrDefaultAsync(
                 "sp_Proyecto_ObtenerPorId",
                 parametros,
                 commandType: CommandType.StoredProcedure);
+
+            return fila == null ? null : MapearProyecto(fila);
         }
 
         public async Task<IList<Proyecto>> ObtenerTodosAsync()
         {
-            var resultado = await _connection.QueryAsync<Proyecto>(
+            var filas = await _connection.QueryAsync(
                 "sp_Proyecto_ObtenerTodos",
                 commandType: CommandType.StoredProcedure);
 
-            return resultado.ToList();
+            return filas.Select(fila => (Proyecto)MapearProyecto(fila)).ToList();
+        }
+
+        private static Proyecto MapearProyecto(dynamic fila)
+        {
+            return new Proyecto
+            {
+                Id = fila.Id,
+                Nombre = fila.Nombre,
+                Descripcion = fila.Descripcion,
+                CreadoPorId = fila.CreadoPorId,
+                Estado = fila.Estado == "ACT" ? EstadoRegistro.Activo : EstadoRegistro.Inactivo,
+                FechaCreacion = fila.FechaCreacion
+            };
         }
     }
 }
