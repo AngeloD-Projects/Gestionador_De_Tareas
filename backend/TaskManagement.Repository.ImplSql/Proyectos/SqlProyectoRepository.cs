@@ -33,7 +33,7 @@ namespace TaskManagement.Repository.ImplSql.Proyectos
                 commandType: CommandType.StoredProcedure);
         }
 
-        public async Task<Proyecto?> ObtenerPorIdAsync(int id)
+        public async Task<ProyectoResumen?> ObtenerPorIdAsync(int id)
         {
             var parametros = new DynamicParameters();
             parametros.Add("@Id", id);
@@ -46,25 +46,28 @@ namespace TaskManagement.Repository.ImplSql.Proyectos
             return fila == null ? null : MapearProyecto(fila);
         }
 
-        public async Task<IList<Proyecto>> ObtenerTodosAsync()
+        public async Task<IList<ProyectoResumen>> ObtenerTodosAsync()
         {
             var filas = await _connection.QueryAsync(
                 "sp_Proyecto_ObtenerTodos",
                 commandType: CommandType.StoredProcedure);
 
-            return filas.Select(fila => (Proyecto)MapearProyecto(fila)).ToList();
+            return filas.Select(fila => (ProyectoResumen)MapearProyecto(fila)).ToList();
         }
 
-        private static Proyecto MapearProyecto(dynamic fila)
+        private static ProyectoResumen MapearProyecto(dynamic fila)
         {
-            return new Proyecto
+            return new ProyectoResumen
             {
                 Id = fila.Id,
                 Nombre = fila.Nombre,
                 Descripcion = fila.Descripcion,
                 CreadoPorId = fila.CreadoPorId,
-                Estado = fila.Estado == "ACT" ? EstadoRegistro.Activo : EstadoRegistro.Inactivo,
-                FechaCreacion = fila.FechaCreacion
+                CreadoPorNombre = fila.CreadoPorNombre,
+                Estado = EstadoRegistroCodigo.Parse((string)fila.Estado),
+                FechaCreacion = fila.FechaCreacion,
+                TotalTareas = fila.TotalTareas,
+                TareasCompletadas = fila.TareasCompletadas
             };
         }
     }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TaskManagement.Domain.Tareas;
 
 namespace TaskManagement.Domain.ApplicationServices.Tareas
 {
@@ -11,8 +12,8 @@ namespace TaskManagement.Domain.ApplicationServices.Tareas
     {
         public string Titulo { get; set; } = string.Empty;
         public string? Descripcion { get; set; }
-        public int EstadoFlujo { get; set; }
-        public int Prioridad { get; set; }
+        public EstadoFlujoTarea EstadoFlujo { get; set; }
+        public Prioridad Prioridad { get; set; }
         public DateTime? FechaVencimiento { get; set; }
         public int? AsignadoAId { get; set; }
     }
@@ -33,10 +34,14 @@ namespace TaskManagement.Domain.ApplicationServices.Tareas
                     .MaximumLength(1000).WithMessage("La descripción no puede superar los 1000 caracteres.");
 
                 RuleFor(model => model.EstadoFlujo)
-                    .InclusiveBetween(0, 4).WithMessage("El estado de flujo indicado no es válido.");
+                    .IsInEnum().WithMessage("El estado de flujo indicado no es válido.");
 
                 RuleFor(model => model.Prioridad)
-                    .InclusiveBetween(0, 2).WithMessage("La prioridad debe ser 0 (Baja), 1 (Media) o 2 (Alta).");
+                    .IsInEnum().WithMessage("La prioridad debe ser Baja, Media o Alta.");
+
+                RuleFor(model => model.AsignadoAId)
+                    .GreaterThan(0).When(model => model.AsignadoAId.HasValue)
+                    .WithMessage("Debe indicar un usuario válido.");
             }
         }
     }

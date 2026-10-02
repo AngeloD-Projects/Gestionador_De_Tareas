@@ -30,14 +30,8 @@ namespace TaskManagement.Domain.ApplicationServices.Proyectos.Services
 
             var nuevoId = await _proyectoRepository.CrearAsync(proyecto);
 
-            return new ProyectoResponse
-            {
-                Id = nuevoId,
-                Nombre = proyecto.Nombre,
-                Descripcion = proyecto.Descripcion,
-                CreadoPorId = usuarioActualId,
-                FechaCreacion = DateTime.UtcNow
-            };
+            // Se relee para devolver los datos reales de la BD (fecha, creador, conteos).
+            return await ObtenerPorIdAsync(nuevoId);
         }
 
         public async Task<ProyectoResponse> ObtenerPorIdAsync(int id)
@@ -55,7 +49,7 @@ namespace TaskManagement.Domain.ApplicationServices.Proyectos.Services
             return proyectos.Select(MapearAResponse).ToList();
         }
 
-        private static ProyectoResponse MapearAResponse(Proyecto proyecto)
+        private static ProyectoResponse MapearAResponse(ProyectoResumen proyecto)
         {
             return new ProyectoResponse
             {
@@ -63,7 +57,10 @@ namespace TaskManagement.Domain.ApplicationServices.Proyectos.Services
                 Nombre = proyecto.Nombre,
                 Descripcion = proyecto.Descripcion,
                 CreadoPorId = proyecto.CreadoPorId,
-                FechaCreacion = proyecto.FechaCreacion
+                CreadoPorNombre = proyecto.CreadoPorNombre,
+                FechaCreacion = proyecto.FechaCreacion,
+                TotalTareas = proyecto.TotalTareas,
+                TareasCompletadas = proyecto.TareasCompletadas
             };
         }
     }

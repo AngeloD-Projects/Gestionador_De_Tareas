@@ -20,7 +20,7 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             _connection = connection;
         }
 
-        public async Task<bool> ActualizarCompletaAsync(Tarea tarea)
+        public async Task<int> ActualizarCompletaAsync(Tarea tarea)
         {
             var parametros = new DynamicParameters();
             parametros.Add("@Id", tarea.Id);
@@ -31,12 +31,10 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             parametros.Add("@FechaVencimiento", tarea.FechaVencimiento);
             parametros.Add("@AsignadoAId", tarea.AsignadoAId);
 
-            int filasAfectadas = await _connection.QuerySingleAsync<int>(
+            return await _connection.QuerySingleAsync<int>(
                 "sp_Tarea_ActualizarCompleta",
                 parametros,
                 commandType: CommandType.StoredProcedure);
-
-            return filasAfectadas > 0;
         }
 
         public async Task<bool> ActualizarEstadoFlujoAsync(int id, EstadoFlujoTarea estadoFlujo)
@@ -83,7 +81,7 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             return filasAfectadas > 0;
         }
 
-        public async Task<Tarea?> ObtenerPorIdAsync(int id)
+        public async Task<TareaDetalle?> ObtenerPorIdAsync(int id)
         {
             var parametros = new DynamicParameters();
             parametros.Add("@Id", id);
@@ -96,7 +94,7 @@ namespace TaskManagement.Repository.ImplSql.Tareas
             return fila == null ? null : MapearTarea(fila);
         }
 
-        public async Task<IList<Tarea>> ObtenerPorUsuarioAsignadoAsync(int usuarioId)
+        public async Task<IList<TareaDetalle>> ObtenerPorUsuarioAsignadoAsync(int usuarioId)
         {
             var parametros = new DynamicParameters();
             parametros.Add("@UsuarioId", usuarioId);
@@ -106,10 +104,10 @@ namespace TaskManagement.Repository.ImplSql.Tareas
                 parametros,
                 commandType: CommandType.StoredProcedure);
 
-            return filas.Select(fila => (Tarea)MapearTarea(fila)).ToList();
+            return filas.Select(fila => (TareaDetalle)MapearTarea(fila)).ToList();
         }
 
-        public async Task<IList<Tarea>> ObtenerTodasAsync(int? proyectoId, EstadoFlujoTarea? estadoFlujo)
+        public async Task<IList<TareaDetalle>> ObtenerTodasAsync(int? proyectoId, EstadoFlujoTarea? estadoFlujo)
         {
             var parametros = new DynamicParameters();
             parametros.Add("@ProyectoId", proyectoId);
@@ -120,23 +118,26 @@ namespace TaskManagement.Repository.ImplSql.Tareas
                 parametros,
                 commandType: CommandType.StoredProcedure);
 
-            return filas.Select(fila => (Tarea)MapearTarea(fila)).ToList();
+            return filas.Select(fila => (TareaDetalle)MapearTarea(fila)).ToList();
         }
 
-        private static Tarea MapearTarea(dynamic fila)
+        private static TareaDetalle MapearTarea(dynamic fila)
         {
-            return new Tarea
+            return new TareaDetalle
             {
                 Id = fila.Id,
                 Titulo = fila.Titulo,
                 Descripcion = fila.Descripcion,
                 EstadoFlujo = (EstadoFlujoTarea)fila.EstadoFlujo,
                 Prioridad = (Prioridad)fila.Prioridad,
-                Estado = fila.Estado == "ACT" ? EstadoRegistro.Activo : EstadoRegistro.Inactivo,
+                Estado = EstadoRegistroCodigo.Parse((string)fila.Estado),
                 FechaVencimiento = fila.FechaVencimiento,
                 ProyectoId = fila.ProyectoId,
+                ProyectoNombre = fila.ProyectoNombre,
                 AsignadoAId = fila.AsignadoAId,
+                AsignadoANombre = fila.AsignadoANombre,
                 CreadoPorId = fila.CreadoPorId,
+                CreadoPorNombre = fila.CreadoPorNombre,
                 FechaCreacion = fila.FechaCreacion,
                 FechaActualizacion = fila.FechaActualizacion
             };

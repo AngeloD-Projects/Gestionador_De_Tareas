@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -18,24 +17,11 @@ namespace TaskManagement.Domain.Proyectos
         public DateTime FechaCreacion { get; set; }
     }
 
-    namespace Validators
+    // Modelo de lectura: el proyecto con los datos que trae vw_ProyectosActivos.
+    public class ProyectoResumen : Proyecto
     {
-        public class Proyecto__MantenimientoValidador : AbstractValidator<Proyecto>
-        {
-            public Proyecto__MantenimientoValidador()
-            {
-                ClassLevelCascadeMode = CascadeMode.Stop;
-
-                RuleFor(model => model.Nombre)
-                    .NotEmpty().WithMessage("El nombre del proyecto es obligatorio.")
-                    .MaximumLength(100).WithMessage("El nombre no puede superar los 100 caracteres.");
-
-                RuleFor(model => model.Descripcion)
-                    .MaximumLength(500).WithMessage("La descripción no puede superar los 500 caracteres.");
-
-                RuleFor(model => model.CreadoPorId)
-                    .GreaterThan(0).WithMessage("El proyecto debe tener un creador válido.");
-            }
-        }
+        public string CreadoPorNombre { get; set; } = string.Empty;
+        public int TotalTareas { get; set; }
+        public int TareasCompletadas { get; set; }
     }
 }

@@ -1,6 +1,160 @@
-@TaskManagement.WebApiCore_HostAddress = http://localhost:5238
+### =====================================================================
+### Prueba completa de la API. Ejecuta las peticiones EN ORDEN (de arriba a abajo).
+### Antes: pon tus contraseñas en las dos variables de abajo (no las subas a git).
+### =====================================================================
 
-GET {{TaskManagement.WebApiCore_HostAddress}}/weatherforecast/
-Accept: application/json
+@host = http://localhost:5238
+@adminEmail = angelo@gmail.com
+@adminPassword = TU_PASSWORD_ADMIN
+@usuarioEmail = prueba@gmail.com
+@usuarioPassword = TU_PASSWORD_USUARIO
 
-###
+### 1. Login Admin -> 200 (trae accessToken, refreshToken y usuario { rol: "Admin" })
+# @name loginAdmin
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{adminEmail}}", "password": "{{adminPassword}}" }
+
+### 2. Login Usuario -> 200 (usuario { rol: "Usuario" })
+# @name loginUsuario
+POST {{host}}/api/auth/login
+Content-Type: application/json
+
+{ "email": "{{usuarioEmail}}", "password": "{{usuarioPassword}}" }
+
+### 3. [Admin] Listar usuarios activos -> 200 (sin passwordHash)
+GET {{host}}/api/usuarios
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+
+### 4. [Admin] Crear proyecto -> 201
+# @name crearProyecto
+POST {{host}}/api/proyectos
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "nombre": "Proyecto QA", "descripcion": "Proyecto para probar la API" }
+
+### 5. [Todos] Listar proyectos -> 200 (con creadoPorNombre, totalTareas, tareasCompletadas)
+GET {{host}}/api/proyectos
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+
+### 6. [Admin] Crear tarea asignada al Usuario -> 201 (prioridad acepta "Alta" o 2)
+# @name crearTarea
+POST {{host}}/api/tareas
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "titulo": "Tarea QA",
+  "descripcion": "Probar el flujo completo",
+  "prioridad": "Alta",
+  "fechaVencimiento": "2026-12-31",
+  "proyectoId": {{crearProyecto.response.body.$.id}},
+  "asignadoAId": {{loginUsuario.response.body.$.usuario.id}}
+}
+
+### 7. [Admin] Crear tarea en proyecto inexistente -> 400 (antes era 500)
+POST {{host}}/api/tareas
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "titulo": "No debe crearse", "prioridad": 1, "proyectoId": 999999 }
+
+### 8. [Admin] Crear tarea con usuario inexistente -> 400 (antes era 500)
+POST {{host}}/api/tareas
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "titulo": "No debe crearse", "proyectoId": {{crearProyecto.response.body.$.id}}, "asignadoAId": 999999 }
+
+### 9. [Admin] Prioridad inválida -> 400 con errores
+POST {{host}}/api/tareas
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "titulo": "No debe crearse", "prioridad": "Urgente", "proyectoId": {{crearProyecto.response.body.$.id}} }
+
+### 10. [Admin] Todas las tareas filtradas -> 200
+GET {{host}}/api/tareas?proyectoId={{crearProyecto.response.body.$.id}}&estadoFlujo=Pendiente
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+
+### 11. [Usuario] Mis tareas -> 200 (transicionesPermitidas: ["EnProgreso"])
+GET {{host}}/api/tareas/mis-tareas
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+
+### 12. [Usuario] Saltar de Pendiente a Completada -> 400
+PATCH {{host}}/api/tareas/{{crearTarea.response.body.$.id}}/estado
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "estadoFlujo": "Completada" }
+
+### 13. [Usuario] Cancelar -> 403 (solo Admin)
+PATCH {{host}}/api/tareas/{{crearTarea.response.body.$.id}}/estado
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "estadoFlujo": "Cancelada" }
+
+### 14. [Usuario] Avanzar a EnProgreso -> 200 (transicionesPermitidas: ["EnRevision"])
+PATCH {{host}}/api/tareas/{{crearTarea.response.body.$.id}}/estado
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "estadoFlujo": "EnProgreso" }
+
+### 15. [Usuario] Ver todas las tareas -> 403 JSON
+GET {{host}}/api/tareas
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+
+### 16. [Usuario] Listar usuarios -> 403 JSON
+GET {{host}}/api/usuarios
+Authorization: Bearer {{loginUsuario.response.body.$.accessToken}}
+
+### 17. [Admin] Editar tarea completa -> 200
+PUT {{host}}/api/tareas/{{crearTarea.response.body.$.id}}
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{
+  "titulo": "Tarea QA (editada)",
+  "descripcion": "Editada por el Admin",
+  "estadoFlujo": "EnRevision",
+  "prioridad": "Media",
+  "fechaVencimiento": null,
+  "asignadoAId": {{loginUsuario.response.body.$.usuario.id}}
+}
+
+### 18. [Admin] Eliminar tarea -> 204
+DELETE {{host}}/api/tareas/{{crearTarea.response.body.$.id}}
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+
+### 19. [Admin] Eliminar otra vez -> 404 (antes devolvía 204)
+DELETE {{host}}/api/tareas/{{crearTarea.response.body.$.id}}
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+
+### 20. [Admin] Editar tarea eliminada -> 404 (antes era 500)
+PUT {{host}}/api/tareas/{{crearTarea.response.body.$.id}}
+Authorization: Bearer {{loginAdmin.response.body.$.accessToken}}
+Content-Type: application/json
+
+{ "titulo": "No debe editarse", "estadoFlujo": 0, "prioridad": 0 }
+
+### 21. Refresh del Usuario -> 200 (nuevo par de tokens)
+POST {{host}}/api/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{loginUsuario.response.body.$.refreshToken}}" }
+
+### 22. Reusar el MISMO refresh token -> 401 (rotación: ya fue usado)
+POST {{host}}/api/auth/refresh
+Content-Type: application/json
+
+{ "refreshToken": "{{loginUsuario.response.body.$.refreshToken}}" }
+
+### 23. Logout Admin -> 200 { revocado: true }
+POST {{host}}/api/auth/logout
+Content-Type: application/json
+
+{ "refreshToken": "{{loginAdmin.response.body.$.refreshToken}}" }

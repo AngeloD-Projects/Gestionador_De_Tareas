@@ -1,4 +1,5 @@
 ﻿using System.Security.Claims;
+using TaskManagement.Domain.Roles;
 
 namespace TaskManagement.WebApiCore.Extensions
 {
@@ -12,7 +13,7 @@ namespace TaskManagement.WebApiCore.Extensions
 
         public static bool EsAdmin(this ClaimsPrincipal usuario)
         {
-            return usuario.IsInRole("Admin");
+            return usuario.IsInRole(RolesSistema.Admin);
         }
     }
 }

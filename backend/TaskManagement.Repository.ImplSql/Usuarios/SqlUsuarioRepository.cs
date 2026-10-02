@@ -46,6 +46,16 @@ namespace TaskManagement.Repository.ImplSql.Usuarios
             return MapearUsuario(fila);
         }
 
+        public async Task<IList<Usuario>> ObtenerTodosAsync()
+        {
+            // El SP solo devuelve usuarios activos y nunca el PasswordHash.
+            var usuarios = await _connection.QueryAsync<Usuario>(
+                "sp_Usuario_ObtenerTodos",
+                commandType: CommandType.StoredProcedure);
+
+            return usuarios.ToList();
+        }
+
         public async Task<int> RegistrarAsync(Usuario usuario)
         {
             var parametros = new DynamicParameters();

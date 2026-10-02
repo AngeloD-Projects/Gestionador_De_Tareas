@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -25,6 +24,7 @@ namespace TaskManagement.Domain.Usuarios
         Inactivo
     }
 
+    // Única conversión entre el código de la BD ('ACT'/'INA') y el enum.
     public static class EstadoRegistroCodigo
     {
         public static EstadoRegistro Parse(string codigo) => codigo switch
@@ -33,37 +33,5 @@ namespace TaskManagement.Domain.Usuarios
             "INA" => EstadoRegistro.Inactivo,
             _ => throw new ArgumentOutOfRangeException(nameof(codigo), codigo, "Código de estado no reconocido.")
         };
-
-        public static string ToCodigo(EstadoRegistro estado) => estado switch
-        {
-            EstadoRegistro.Activo => "ACT",
-            EstadoRegistro.Inactivo => "INA",
-            _ => throw new ArgumentOutOfRangeException(nameof(estado))
-        };
-    }
-
-    namespace Validators
-    {
-        public class Usuario__RegistroValidador : AbstractValidator<Usuario>
-        {
-            public Usuario__RegistroValidador()
-            {
-                ClassLevelCascadeMode = CascadeMode.Stop;
-
-                RuleFor(model => model.NombreUsuario)
-                    .NotEmpty().WithMessage("El nombre de usuario es obligatorio.")
-                    .MaximumLength(50).WithMessage("El nombre de usuario no puede superar los 50 caracteres.");
-
-                RuleFor(model => model.Email)
-                    .NotEmpty().WithMessage("El email es obligatorio.")
-                    .EmailAddress().WithMessage("El email no tiene un formato de correo válido.");
-
-                RuleFor(model => model.PasswordHash)
-                    .NotEmpty().WithMessage("La contraseña es obligatoria.");
-            }
-        }
     }
 }
-
-
-

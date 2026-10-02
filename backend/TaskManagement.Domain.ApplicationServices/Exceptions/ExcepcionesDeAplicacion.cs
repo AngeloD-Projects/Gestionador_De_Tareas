@@ -6,6 +6,11 @@ using System.Threading.Tasks;
 
 namespace TaskManagement.Domain.ApplicationServices.Exceptions
 {
+    public class BadRequestException : Exception
+    {
+        public BadRequestException(string mensaje) : base(mensaje) { }
+    }
+
     public class NotFoundException : Exception
     {
         public NotFoundException(string mensaje) : base(mensaje) { }

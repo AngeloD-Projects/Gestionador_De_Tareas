@@ -10,7 +10,7 @@ namespace TaskManagement.Domain.Repository.Proyectos
     public interface IProyectoRepository
     {
         Task<int> CrearAsync(Proyecto proyecto);
-        Task<IList<Proyecto>> ObtenerTodosAsync();
-        Task<Proyecto?> ObtenerPorIdAsync(int id);
+        Task<IList<ProyectoResumen>> ObtenerTodosAsync();
+        Task<ProyectoResumen?> ObtenerPorIdAsync(int id);
     }
 }

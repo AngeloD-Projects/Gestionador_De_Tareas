@@ -6,17 +6,17 @@ using System.Text;
 using System.Threading.Tasks;
 using TaskManagement.Domain.ApplicationServices.Auths.Interfaces;
 using TaskManagement.Domain.ApplicationServices.Exceptions;
+using TaskManagement.Domain.ApplicationServices.Usuarios;
 using TaskManagement.Domain.RefreshTokens;
 using TaskManagement.Domain.Repository.RefreshTokens;
 using TaskManagement.Domain.Repository.Usuarios;
+using TaskManagement.Domain.Roles;
 using TaskManagement.Domain.Usuarios;
 
 namespace TaskManagement.Domain.ApplicationServices.Auths.Services
 {
     public class AuthService : IAuthService
     {
-        private const int RolIdUsuarioPorDefecto = 2;
-
         private readonly IUsuarioRepository _usuarioRepository;
         private readonly IRefreshTokenRepository _refreshTokenRepository;
         private readonly IJwtTokenGenerator _jwtTokenGenerator;
@@ -49,6 +49,10 @@ namespace TaskManagement.Domain.ApplicationServices.Auths.Services
                 throw new UnauthorizedException("Email o contraseña incorrectos.");
             }
 
+            // Se valida después de la contraseña para no revelar qué emails existen.
+            if (usuario.Estado == EstadoRegistro.Inactivo)
+                throw new ForbiddenException("Tu cuenta está desactivada. Contacta a un administrador.");
+
             await _usuarioRepository.ResetIntentosAsync(usuario.Id);
 
             return await GenerarRespuestaConTokensAsync(usuario);
@@ -65,43 +69,46 @@ namespace TaskManagement.Domain.ApplicationServices.Auths.Services
             if (tokenGuardado == null)
                 throw new UnauthorizedException("El refresh token no es válido o ha expirado.");
 
-            var usuario = await _usuarioRepository.ObtenerPorIdAsync(tokenGuardado.UsuarioId);
-            if (usuario == null)
-                throw new UnauthorizedException("El usuario asociado a este token ya no existe.");
+            // Solo una petición puede revocarlo: si dos llegan a la vez, la segunda se rechaza.
+            var revocado = await _refreshTokenRepository.RevocarAsync(request.RefreshToken);
+            if (!revocado)
+                throw new UnauthorizedException("El refresh token ya fue utilizado.");
 
-            await _refreshTokenRepository.RevocarAsync(request.RefreshToken);
+            var usuario = await _usuarioRepository.ObtenerPorIdAsync(tokenGuardado.UsuarioId);
+            if (usuario == null || usuario.Estado == EstadoRegistro.Inactivo)
+                throw new UnauthorizedException("El usuario asociado a este token ya no está disponible.");
 
             return await GenerarRespuestaConTokensAsync(usuario);
         }
 
         public async Task<UsuarioResponse> RegistrarAsync(RegistroUsuarioRequest request)
         {
-            var existente = await _usuarioRepository.ObtenerPorEmailAsync(request.Email);
-            if (existente != null)
-                throw new ConflictException("Ya existe una cuenta registrada con ese email.");
-
             var usuario = new Usuario
             {
                 NombreUsuario = request.NombreUsuario,
                 Email = request.Email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.Password),
-                RolId = RolIdUsuarioPorDefecto
+                RolId = RolesSistema.UsuarioId
             };
 
-            var nuevoId = await _usuarioRepository.RegistrarAsync(usuario);
+            // El SP valida email y nombre de usuario dentro de una transacción.
+            var resultado = await _usuarioRepository.RegistrarAsync(usuario);
 
-            return new UsuarioResponse
+            switch (resultado)
             {
-                Id = nuevoId,
-                NombreUsuario = usuario.NombreUsuario,
-                Email = usuario.Email,
-                Rol = ObtenerNombreRol(usuario.RolId)
-            };
+                case CodigosResultadoUsuario.EmailDuplicado:
+                    throw new ConflictException("Ya existe una cuenta registrada con ese email.");
+                case CodigosResultadoUsuario.NombreUsuarioDuplicado:
+                    throw new ConflictException("Ese nombre de usuario ya está en uso.");
+            }
+
+            usuario.Id = resultado;
+            return UsuarioResponse.Desde(usuario);
         }
 
         private async Task<LoginResponse> GenerarRespuestaConTokensAsync(Usuario usuario)
         {
-            var nombreRol = ObtenerNombreRol(usuario.RolId);
+            var nombreRol = RolesSistema.ObtenerNombre(usuario.RolId);
             var accessToken = _jwtTokenGenerator.GenerarAccessToken(usuario, nombreRol);
             var refreshTokenValor = GenerarRefreshTokenAleatorio();
 
@@ -118,7 +125,8 @@ namespace TaskManagement.Domain.ApplicationServices.Auths.Services
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshTokenValor,
-                ExpiraEn = _jwtTokenGenerator.ObtenerExpiracionAccessToken()
+                ExpiraEn = _jwtTokenGenerator.ObtenerExpiracionAccessToken(),
+                Usuario = UsuarioResponse.Desde(usuario)
             };
         }
 
@@ -127,12 +135,5 @@ namespace TaskManagement.Domain.ApplicationServices.Auths.Services
             var bytesAleatorios = RandomNumberGenerator.GetBytes(64);
             return Convert.ToBase64String(bytesAleatorios);
         }
-
-        private static string ObtenerNombreRol(int rolId) => rolId switch
-        {
-            1 => "Admin",
-            2 => "Usuario",
-            _ => "Usuario"
-        };
     }
 }

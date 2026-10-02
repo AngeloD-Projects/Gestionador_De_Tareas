@@ -4,12 +4,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TaskManagement.Domain.Tareas;
 
 namespace TaskManagement.Domain.ApplicationServices.Tareas
 {
     public class ActualizarEstadoTareaRequest
     {
-        public int EstadoFlujo { get; set; }
+        public EstadoFlujoTarea EstadoFlujo { get; set; }
     }
 
     namespace Validators
@@ -19,7 +20,7 @@ namespace TaskManagement.Domain.ApplicationServices.Tareas
             public ActualizarEstadoTareaRequest__Validador()
             {
                 RuleFor(model => model.EstadoFlujo)
-                    .InclusiveBetween(0, 4).WithMessage("El estado de flujo indicado no es válido.");
+                    .IsInEnum().WithMessage("El estado de flujo indicado no es válido.");
             }
         }
     }

@@ -1,6 +1,6 @@
 ﻿using System.Net;
-using System.Text.Json;
 using TaskManagement.Domain.ApplicationServices.Exceptions;
+using TaskManagement.WebApiCore.Errores;
 
 namespace TaskManagement.WebApiCore.Middlewares
 {
@@ -31,6 +31,7 @@ namespace TaskManagement.WebApiCore.Middlewares
         {
             var (statusCode, mensaje) = ex switch
             {
+                BadRequestException => (HttpStatusCode.BadRequest, ex.Message),
                 NotFoundException => (HttpStatusCode.NotFound, ex.Message),
                 ForbiddenException => (HttpStatusCode.Forbidden, ex.Message),
                 UnauthorizedException => (HttpStatusCode.Unauthorized, ex.Message),
@@ -42,16 +43,7 @@ namespace TaskManagement.WebApiCore.Middlewares
             if (statusCode == HttpStatusCode.InternalServerError)
                 _logger.LogError(ex, "Error no controlado en {Path}", context.Request.Path);
 
-            context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int)statusCode;
-
-            var respuesta = new
-            {
-                status = (int)statusCode,
-                mensaje
-            };
-
-            await context.Response.WriteAsync(JsonSerializer.Serialize(respuesta));
+            await ErrorResponse.EscribirAsync(context, (int)statusCode, mensaje);
         }
     }
 }

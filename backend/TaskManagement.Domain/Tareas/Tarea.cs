@@ -1,5 +1,4 @@
-﻿using FluentValidation;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -41,41 +40,37 @@ namespace TaskManagement.Domain.Tareas
 
     }
 
-    namespace Validators
+    // Modelo de lectura: la tarea con los nombres que trae vw_TareasActivas.
+    public class TareaDetalle : Tarea
     {
-        public class Tarea__MantenimientoValidador : AbstractValidator<Tarea>
-        {
-            public Tarea__MantenimientoValidador()
+        public string ProyectoNombre { get; set; } = string.Empty;
+        public string? AsignadoANombre { get; set; }
+        public string CreadoPorNombre { get; set; } = string.Empty;
+    }
+
+    // Reglas del flujo: Pendiente → EnProgreso → EnRevision → Completada.
+    // El Usuario solo avanza un paso; el Admin puede mover a cualquier estado (incluido Cancelada).
+    public static class FlujoTarea
+    {
+        private static readonly IReadOnlyDictionary<EstadoFlujoTarea, EstadoFlujoTarea> SiguienteEstado =
+            new Dictionary<EstadoFlujoTarea, EstadoFlujoTarea>
             {
-                ClassLevelCascadeMode = CascadeMode.Stop;
+                [EstadoFlujoTarea.Pendiente] = EstadoFlujoTarea.EnProgreso,
+                [EstadoFlujoTarea.EnProgreso] = EstadoFlujoTarea.EnRevision,
+                [EstadoFlujoTarea.EnRevision] = EstadoFlujoTarea.Completada
+            };
 
-                RuleFor(model => model.Titulo)
-                    .NotEmpty().WithMessage("El título de la tarea es obligatorio.")
-                    .MaximumLength(150).WithMessage("El título no puede superar los 150 caracteres.");
+        public static IReadOnlyList<EstadoFlujoTarea> ObtenerTransicionesPermitidas(EstadoFlujoTarea actual, bool esAdmin)
+        {
+            if (esAdmin)
+                return Enum.GetValues<EstadoFlujoTarea>().Where(estado => estado != actual).ToList();
 
-                RuleFor(model => model.Descripcion)
-                    .MaximumLength(1000).WithMessage("La descripción no puede superar los 1000 caracteres.");
-
-                RuleFor(model => model.ProyectoId)
-                    .GreaterThan(0).WithMessage("La tarea debe pertenecer a un proyecto válido.");
-
-                RuleFor(model => model.Prioridad)
-                    .IsInEnum().WithMessage("La prioridad indicada no es válida.");
-            }
+            return SiguienteEstado.TryGetValue(actual, out var siguiente) ? [siguiente] : [];
         }
 
-        public class Tarea__CambioEstadoValidador : AbstractValidator<Tarea>
+        public static bool EsTransicionPermitida(EstadoFlujoTarea actual, EstadoFlujoTarea nuevo, bool esAdmin)
         {
-            public Tarea__CambioEstadoValidador()
-            {
-                ClassLevelCascadeMode = CascadeMode.Stop;
-
-                RuleFor(model => model.Id)
-                    .GreaterThan(0).WithMessage("Debe indicar la tarea a actualizar.");
-
-                RuleFor(model => model.EstadoFlujo)
-                    .IsInEnum().WithMessage("El estado de flujo indicado no es válido.");
-            }
+            return ObtenerTransicionesPermitidas(actual, esAdmin).Contains(nuevo);
         }
     }
 }
