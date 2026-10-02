@@ -1,0 +1,31 @@
+name: Backend - Build
+
+on:
+  push:
+    branches: [ main ]
+    paths: [ "backend/**", ".github/workflows/backend-build.yml" ]
+  pull_request:
+    branches: [ main ]
+    paths: [ "backend/**", ".github/workflows/backend-build.yml" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+
+      - name: Restaurar paquetes
+        run: dotnet restore backend/TaskManagement.sln
+
+      - name: Compilar
+        run: dotnet build backend/TaskManagement.sln --configuration Release --no-restore -warnaserror
+
+      - name: Paquetes vulnerables
+        run: |
+          dotnet list backend/TaskManagement.sln package --vulnerable --include-transitive 2>&1 | tee vulnerables.txt
+          ! grep -q "tiene los siguientes paquetes vulnerables\|has the following vulnerable packages" vulnerables.txt
