@@ -62,6 +62,14 @@ export default defineConfig([
     }),
   },
   {
+    // Los tests pueden preparar el estado interno de una feature (ej: reiniciar la sesión).
+    // Las demás reglas siguen aplicando.
+    files: ['src/**/*.test.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': ['error', { patterns: [sinRutasRelativasLargas] }],
+    },
+  },
+  {
     // Los componentes de shadcn/ui exportan variantes junto al componente: es su diseño.
     files: ['src/shared/components/ui/**/*.tsx'],
     rules: { 'react-refresh/only-export-components': 'off' },

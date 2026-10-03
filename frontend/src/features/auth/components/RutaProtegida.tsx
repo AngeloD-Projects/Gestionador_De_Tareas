@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import { RUTAS } from '@/shared/config/rutas'
 import { useSesion } from '../hooks/useSesion'
-import type { Rol } from '../types'
+import type { EstadoNavegacionAuth, Rol } from '../types'
 
 interface RutaProtegidaProps {
   /** Si se indica, solo esos roles pueden entrar; el resto va a "Sin acceso". */
@@ -14,7 +14,8 @@ export function RutaProtegida({ rolesPermitidos }: RutaProtegidaProps) {
   const ubicacion = useLocation()
 
   if (!usuario) {
-    return <Navigate to={RUTAS.login} replace state={{ desde: ubicacion.pathname }} />
+    const estado: EstadoNavegacionAuth = { desde: ubicacion.pathname }
+    return <Navigate to={RUTAS.login} replace state={estado} />
   }
 
   if (rolesPermitidos && !rolesPermitidos.includes(usuario.rol)) {

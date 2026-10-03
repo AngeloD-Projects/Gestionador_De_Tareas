@@ -1,4 +1,4 @@
-import { createBrowserRouter } from 'react-router'
+import { createBrowserRouter, type RouteObject } from 'react-router'
 import { LoginPage, RegistroPage, ROLES, RutaProtegida, RutaPublica } from '@/features/auth'
 import { ProyectosPage } from '@/features/proyectos'
 import { GestionTareasPage, MisTareasPage } from '@/features/tareas'
@@ -10,7 +10,7 @@ import { NoEncontradoPage } from './pages/NoEncontradoPage'
 import { SinAccesoPage } from './pages/SinAccesoPage'
 
 // Todas las rutas de la aplicación se declaran aquí, en un solo lugar.
-export const router = createBrowserRouter([
+export const rutas: RouteObject[] = [
   {
     // Sin sesión: login y registro.
     element: <RutaPublica />,
@@ -45,4 +45,6 @@ export const router = createBrowserRouter([
     ],
   },
   { path: '*', element: <NoEncontradoPage /> },
-])
+]
+
+export const router = createBrowserRouter(rutas)

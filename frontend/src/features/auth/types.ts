@@ -25,6 +25,14 @@ export interface RegistroRequest {
   password: string
 }
 
+/** Datos que viajan entre pantallas de auth (state de React Router). */
+export interface EstadoNavegacionAuth {
+  /** Página que se intentaba abrir sin sesión: se vuelve a ella tras el login. */
+  desde?: string
+  /** Email recién registrado: se precarga en el login. */
+  email?: string
+}
+
 export interface LoginResponse {
   accessToken: string
   refreshToken: string
