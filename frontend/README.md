@@ -18,7 +18,19 @@ React Hook Form + Zod · Tailwind CSS + shadcn/ui · ESLint + Prettier
 | `npm run dev`    | Servidor de desarrollo en `http://localhost:5173` (las rutas `/api` se reenvían al backend) |
 | `npm run build`  | Verifica tipos y genera la versión de producción en `dist/`                                 |
 | `npm run lint`   | ESLint, incluidas las reglas de arquitectura de carpetas                                    |
+| `npm test`       | Tests con Vitest                                                                            |
 | `npm run format` | Formatea todo con Prettier                                                                  |
+
+## Configuración
+
+- **Desarrollo:** no requiere nada; `/api` se reenvía al backend con el proxy de Vite.
+- **Producción:** definir `VITE_API_URL` (ej. `https://api.midominio.com/api`) al ejecutar `npm run build`.
+
+## Sesión
+
+- El cliente HTTP (`shared/api/httpClient.ts`) agrega el token y, si vence, lo renueva **una sola vez**
+  aunque haya varias peticiones a la vez (el backend rota el refresh token). Probado en `httpClient.test.ts`.
+- La sesión se guarda en `localStorage` y la caché de datos se borra al cerrar sesión.
 
 ## Estructura
 
