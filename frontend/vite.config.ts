@@ -26,5 +26,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Zona horaria fija: los tests de fechas dan lo mismo en cualquier PC o servidor (Perú = UTC-5).
+    env: { TZ: 'America/Lima' },
   },
 })
