@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router'
 import { useCerrarSesion, useSesion } from '@/features/auth'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
+import { BarraNavegando } from './BarraNavegando'
 import { ENLACES_NAVEGACION } from './navegacion'
 
 // Estructura de las páginas con sesión: barra superior + contenido.
@@ -17,6 +18,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-svh bg-muted/30">
+      <BarraNavegando />
       <header className="border-b bg-background">
         <div className="mx-auto flex h-14 max-w-6xl items-center gap-6 px-4">
           <span className="font-semibold">TaskManagement</span>

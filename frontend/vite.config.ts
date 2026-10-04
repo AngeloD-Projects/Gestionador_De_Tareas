@@ -23,6 +23,23 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rolldownOptions: {
+      output: {
+        // Librerías grandes y estables en archivos propios: el navegador las guarda en caché y,
+        // al publicar una versión nueva de la app, solo descarga el código que cambió.
+        codeSplitting: {
+          groups: [
+            {
+              name: 'react',
+              test: /node_modules[\\/](react|react-dom|react-router|scheduler)[\\/]/,
+            },
+            { name: 'radix', test: /node_modules[\\/](@radix-ui|radix-ui)[\\/]/ },
+          ],
+        },
+      },
+    },
+  },
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
