@@ -27,6 +27,7 @@ using TaskManagement.Repository.ImplSql.RefreshTokens;
 using TaskManagement.Repository.ImplSql.Tareas;
 using TaskManagement.Repository.ImplSql.Usuarios;
 using TaskManagement.WebApiCore.Errores;
+using TaskManagement.WebApiCore.Json;
 using TaskManagement.WebApiCore.Securitys;
 
 namespace TaskManagement.WebApiCore.Extensions
@@ -69,8 +70,13 @@ namespace TaskManagement.WebApiCore.Extensions
         public static IServiceCollection AddControllersApi(this IServiceCollection services)
         {
             services.AddControllers(options => options.Filters.Add<ValidacionFilter>())
-                // Enums como texto en las respuestas ("EnProgreso"); en las peticiones acepta texto o número.
-                .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+                .AddJsonOptions(options =>
+                {
+                    // Enums como texto en las respuestas ("EnProgreso"); en las peticiones acepta texto o número.
+                    options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+                    // Fechas de la BD (UTC) con "Z", para que el navegador las convierta bien a hora local.
+                    options.JsonSerializerOptions.Converters.Add(new FechaUtcJsonConverter());
+                });
 
             services.Configure<ApiBehaviorOptions>(options =>
                 options.InvalidModelStateResponseFactory = ValidacionResponseFactory.Crear);
