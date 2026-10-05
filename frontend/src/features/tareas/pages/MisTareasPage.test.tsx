@@ -1,5 +1,5 @@
-import { screen, within } from '@testing-library/react'
-import type { AxiosAdapter } from 'axios'
+import { screen, waitFor, within } from '@testing-library/react'
+import { AxiosError, type AxiosAdapter } from 'axios'
 import { format } from 'date-fns'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { useSesionStore } from '@/features/auth/store/sesionStore'
@@ -12,6 +12,10 @@ import { MisTareasPage } from './MisTareasPage'
 let esAdmin = false
 let tareas: Tarea[] = []
 const patches: { url?: string; cuerpo: unknown }[] = []
+/** Para probar la actualización optimista: el PATCH espera hasta que el test lo libere. */
+let liberarPatch: (() => void) | null = null
+let demorarPatch = false
+let rechazarPatch = false
 
 function transiciones(estado: EstadoFlujo): EstadoFlujo[] {
   if (esAdmin) return ESTADOS_FLUJO.filter((e) => e !== estado)
@@ -54,6 +58,15 @@ const backendSimulado: AxiosAdapter = async (config) => {
     const id = Number(config.url?.split('/')[2])
     const { estadoFlujo } = JSON.parse(config.data as string) as { estadoFlujo: EstadoFlujo }
     patches.push({ url: config.url, cuerpo: { estadoFlujo } })
+    if (demorarPatch) await new Promise<void>((resolver) => (liberarPatch = resolver))
+    if (rechazarPatch) {
+      const data = {
+        status: 400,
+        mensaje: 'No se puede pasar una tarea de Pendiente a EnProgreso.',
+      }
+      const res = { data, status: 400, statusText: '', headers: {}, config }
+      throw new AxiosError('400', 'ERR', config, null, res)
+    }
     tareas = tareas.map((t) =>
       t.id === id ? { ...t, estadoFlujo, transicionesPermitidas: transiciones(estadoFlujo) } : t,
     )
@@ -81,7 +94,50 @@ describe('MisTareasPage', () => {
   beforeEach(() => {
     httpClient.defaults.adapter = backendSimulado
     patches.length = 0
+    demorarPatch = false
+    rechazarPatch = false
+    liberarPatch = null
     iniciarSesion(false)
+  })
+
+  it('la tarea cambia de columna AL INSTANTE, antes de que responda el backend', async () => {
+    demorarPatch = true
+    tareas = [tarea({ id: 4, titulo: 'Optimista', estadoFlujo: 'Pendiente' })]
+    const { usuario } = renderizar(<MisTareasPage />)
+
+    const card = await screen.findByRole('generic', { name: 'Optimista' })
+    await usuario.click(within(card).getByRole('button', { name: 'Iniciar' }))
+
+    // El backend todavía no respondió, pero la tarjeta ya está en "En progreso".
+    expect(await within(columna('En progreso')).findByText('Optimista')).toBeInTheDocument()
+    expect(liberarPatch).not.toBeNull()
+
+    liberarPatch?.()
+    expect(await screen.findByRole('button', { name: 'Enviar a revisión' })).toBeInTheDocument()
+  })
+
+  it('si el backend rechaza el cambio, la tarea vuelve a su columna', async () => {
+    rechazarPatch = true
+    tareas = [tarea({ id: 5, titulo: 'Rechazada', estadoFlujo: 'Pendiente' })]
+    const { usuario } = renderizar(<MisTareasPage />)
+
+    const card = await screen.findByRole('generic', { name: 'Rechazada' })
+    await usuario.click(within(card).getByRole('button', { name: 'Iniciar' }))
+
+    await waitFor(() => expect(patches).toHaveLength(1))
+    expect(await within(columna('Pendiente')).findByText('Rechazada')).toBeInTheDocument()
+    expect(within(columna('En progreso')).queryByText('Rechazada')).not.toBeInTheDocument()
+  })
+
+  it('solo las tareas que se pueden mover tienen manija para arrastrar', async () => {
+    tareas = [
+      tarea({ id: 1, titulo: 'Movible', estadoFlujo: 'Pendiente' }),
+      tarea({ id: 2, titulo: 'Terminada', estadoFlujo: 'Completada' }),
+    ]
+    renderizar(<MisTareasPage />)
+
+    expect(await screen.findByRole('button', { name: 'Arrastrar "Movible"' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Arrastrar "Terminada"' })).not.toBeInTheDocument()
   })
 
   it('reparte las tareas en columnas por estado y resume lo pendiente', async () => {

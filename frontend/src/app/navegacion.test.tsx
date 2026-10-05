@@ -1,9 +1,9 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render, screen } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AxiosError, type AxiosAdapter } from 'axios'
 import { createMemoryRouter, RouterProvider } from 'react-router'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { useSesionStore } from '@/features/auth/store/sesionStore'
 import { httpClientPublico } from '@/shared/api/httpClient'
 import { rutas } from './router'
@@ -61,10 +61,18 @@ async function iniciarSesion(usuario: ReturnType<typeof userEvent.setup>, email:
 }
 
 describe('Navegación y permisos', () => {
+  // Las páginas diferidas se compilan la primera vez que se importan (en CI siempre en frío).
+  // Se precargan aquí, una sola vez, para que ningún test espere esa compilación a mitad de camino.
+  beforeAll(async () => {
+    await Promise.all([import('@/features/tareas'), import('@/features/proyectos')])
+  }, 60_000)
+
   beforeEach(() => {
     httpClientPublico.defaults.adapter = backendSimulado
     llamadas.length = 0
+    // Navegador "nuevo": sin sesión y sin rastro de quién estuvo antes.
     useSesionStore.getState().cerrarSesion()
+    useSesionStore.setState({ ultimoUsuarioId: null })
   })
 
   it('sin sesión, una página protegida lleva al login', async () => {
@@ -128,6 +136,31 @@ describe('Navegación y permisos', () => {
     expect(await screen.findByRole('heading', { name: 'Iniciar sesión' })).toBeInTheDocument()
     expect(llamadas).toContain('/auth/logout')
     expect(useSesionStore.getState().usuario).toBeNull()
+  })
+
+  it('(bug) el Admin sale desde una página de Admin y entra un Usuario: va a su inicio, no a "Sin acceso"', async () => {
+    const { usuario, router } = abrirApp('/login')
+    await iniciarSesion(usuario, 'admin@test.com')
+    expect(await screen.findByRole('heading', { name: 'Gestión de tareas' })).toBeInTheDocument()
+
+    await usuario.click(screen.getByRole('button', { name: 'Cerrar sesión' }))
+    await iniciarSesion(usuario, 'usuario@test.com')
+
+    expect(await screen.findByRole('heading', { name: 'Mis tareas' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/mis-tareas')
+  })
+
+  it('si la sesión vence, la MISMA persona vuelve a la página donde estaba', async () => {
+    const { usuario, router } = abrirApp('/login')
+    await iniciarSesion(usuario, 'admin@test.com')
+    await screen.findByRole('heading', { name: 'Gestión de tareas' })
+
+    // Lo que hace el cliente HTTP cuando el refresh token ya no sirve.
+    act(() => useSesionStore.getState().cerrarSesion())
+    await iniciarSesion(usuario, 'admin@test.com')
+
+    expect(await screen.findByRole('heading', { name: 'Gestión de tareas' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/admin/tareas')
   })
 
   it('una ruta inexistente muestra "Página no encontrada"', async () => {

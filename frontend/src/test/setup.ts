@@ -10,6 +10,14 @@ configure({ asyncUtilTimeout: 5000 })
 Element.prototype.hasPointerCapture ??= () => false
 Element.prototype.releasePointerCapture ??= () => {}
 Element.prototype.scrollIntoView ??= () => {}
+// jsdom tampoco implementa matchMedia (lo usa el tema "Según el sistema"): se simula en modo claro.
+window.matchMedia ??= (query: string) =>
+  ({
+    matches: false,
+    media: query,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+  }) as unknown as MediaQueryList
 
 // Cada test empieza con la pantalla y el almacenamiento limpios.
 afterEach(() => {

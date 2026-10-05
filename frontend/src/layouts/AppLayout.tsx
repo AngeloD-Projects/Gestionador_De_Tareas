@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router'
 import { useCerrarSesion, useSesion } from '@/features/auth'
 import { Button } from '@/shared/components/ui/button'
 import { cn } from '@/shared/lib/utils'
+import { BotonTema } from '@/shared/components/BotonTema'
 import { BarraNavegando } from './BarraNavegando'
 import { ENLACES_NAVEGACION } from './navegacion'
 
@@ -46,6 +47,7 @@ export function AppLayout() {
               <p className="font-medium">{usuario.nombreUsuario}</p>
               <p className="text-xs text-muted-foreground">{usuario.rol}</p>
             </div>
+            <BotonTema />
             <Button variant="ghost" size="sm" onClick={cerrarSesion} aria-label="Cerrar sesión">
               <LogOut className="size-4" />
               <span className="hidden sm:inline">Salir</span>

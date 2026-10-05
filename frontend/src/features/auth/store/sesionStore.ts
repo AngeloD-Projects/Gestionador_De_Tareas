@@ -6,6 +6,8 @@ interface SesionState {
   accessToken: string | null
   refreshToken: string | null
   usuario: Usuario | null
+  /** Id de quien tenía la última sesión cerrada: la página pendiente tras el login es solo suya. */
+  ultimoUsuarioId: number | null
   guardarSesion: (respuesta: LoginResponse) => void
   cerrarSesion: () => void
 }
@@ -17,16 +19,24 @@ export const useSesionStore = create<SesionState>()(
       accessToken: null,
       refreshToken: null,
       usuario: null,
+      ultimoUsuarioId: null,
       guardarSesion: ({ accessToken, refreshToken, usuario }) =>
         set({ accessToken, refreshToken, usuario }),
-      cerrarSesion: () => set({ accessToken: null, refreshToken: null, usuario: null }),
+      cerrarSesion: () =>
+        set((estado) => ({
+          accessToken: null,
+          refreshToken: null,
+          usuario: null,
+          ultimoUsuarioId: estado.usuario?.id ?? estado.ultimoUsuarioId,
+        })),
     }),
     {
       name: 'taskmanagement-sesion',
-      partialize: ({ accessToken, refreshToken, usuario }) => ({
+      partialize: ({ accessToken, refreshToken, usuario, ultimoUsuarioId }) => ({
         accessToken,
         refreshToken,
         usuario,
+        ultimoUsuarioId,
       }),
     },
   ),

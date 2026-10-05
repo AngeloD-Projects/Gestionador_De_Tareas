@@ -29,6 +29,9 @@ export interface RegistroRequest {
 export interface EstadoNavegacionAuth {
   /** Página que se intentaba abrir sin sesión: se vuelve a ella tras el login. */
   desde?: string
+  /** A quién pertenece `desde` (quien estaba en esa página al cerrarse su sesión).
+   *  null: nadie (se abrió un enlace sin sesión). Otro usuario que inicie sesión NO va a esa página. */
+  deUsuarioId?: number | null
   /** Email recién registrado: se precarga en el login. */
   email?: string
 }

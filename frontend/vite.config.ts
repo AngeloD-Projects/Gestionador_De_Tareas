@@ -42,6 +42,8 @@ export default defineConfig({
   },
   test: {
     environment: 'jsdom',
+    // Margen para la primera compilación de las páginas diferidas en PCs lentos o en CI.
+    testTimeout: 15_000,
     setupFiles: ['./src/test/setup.ts'],
     // Zona horaria fija: los tests de fechas dan lo mismo en cualquier PC o servidor (Perú = UTC-5).
     env: { TZ: 'America/Lima' },

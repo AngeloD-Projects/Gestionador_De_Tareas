@@ -5,6 +5,18 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TaskManagement</title>
+    <!-- Aplica el tema guardado ANTES de pintar la página (sin esto, en modo oscuro se ve un destello blanco).
+         Misma clave y lógica que src/shared/hooks/useTema.ts. -->
+    <script>
+      try {
+        var tema =
+          JSON.parse(localStorage.getItem('taskmanagement-tema') || '{}').state?.tema || 'sistema'
+        var oscuro =
+          tema === 'oscuro' ||
+          (tema === 'sistema' && matchMedia('(prefers-color-scheme: dark)').matches)
+        if (oscuro) document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
